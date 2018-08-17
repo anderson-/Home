@@ -61,7 +61,9 @@
 #define AlignModeDefault 0
 
 #define TIME_MSG_LEN 11  // time sync to PC is HEADER followed by unix time_t as ten ascii digits
-#define TIME_HEADER 255  // Header tag for serial time sync message
+#define TIME_HEADER 'T'  // Header tag for serial time sync message
+#define REQUEST_HEADER '?'  // Header tag for serial time sync message
+#define BRIGHTNESS_HEADER 'B'  // Header tag for serial time sync message
 
 // The buttons are located at D5, D6, & D7.
 #define buttonmask 224
@@ -199,10 +201,45 @@ void delayTime(byte time)
 }
 
 
+void printDigits(byte digits){
+  // utility function for digital clock display: prints preceding colon and leading 0
+  if(digits < 10)
+    Serial.print('0');
+  Serial.print(digits,DEC);
+}
+
+int year_;
+
+void digitalClockDisplay(){
+  // digital clock display of current date and time
+  Serial.print(">");
+  printDigits(hour());
+  Serial.print(":");
+  printDigits(minute());
+  Serial.print(":");
+  printDigits(second());
+  Serial.print(" ");
+  printDigits(day());
+  Serial.print("/");
+  printDigits(month());
+  Serial.print("/");
+  printDigits(year_);
+  Serial.println();
+}
+
+// Variables to store brightness of the three LED rings.
+byte HourBright;
+byte MinBright;
+byte SecBright;
+byte MainBright;
+
+void EESaveSettings (void);
+
 boolean getPCtime() {
   // if time sync available from serial port, update time and return true
   while(Serial.available() >=  TIME_MSG_LEN ){  // time message consists of a header and ten ascii digits
-    if( Serial.read() == TIME_HEADER ) {
+    byte header = Serial.read();
+    if( header == TIME_HEADER ) {
       time_t pctime = 0;
       for(int i=0; i < TIME_MSG_LEN -1; i++){
         char c= Serial.read();
@@ -212,32 +249,25 @@ boolean getPCtime() {
       }
       setTime(pctime);  // Sync Arduino clock to the time received on the serial port
       return true;  // return true if time message received on the serial port
+    } else if( header == REQUEST_HEADER ) {
+      digitalClockDisplay();
+    } else if( header == BRIGHTNESS_HEADER ) {
+      byte t = Serial.read();
+      byte b = Serial.read() - 48;
+      if (t == 'M') {
+        MainBright = b;
+      } else if (t == 'h') {
+        HourBright = b;
+      } else if (t == 'm') {
+        MinBright = b;
+      } else if (t == 's') {
+        SecBright = b;
+      } else if (t == 'S') {
+        EESaveSettings();
+      }
     }
   }
   return false;  // if no message return false
-}
-
-
-void printDigits(byte digits){
-  // utility function for digital clock display: prints preceding colon and leading 0
-  Serial.print(":");
-  if(digits < 10)
-    Serial.print('0');
-  Serial.print(digits,DEC);
-}
-
-
-void digitalClockDisplay(){
-  // digital clock display of current date and time
-  Serial.print(hour(),DEC);
-  printDigits(minute());
-  printDigits(second());
-  Serial.print(" ");
-  Serial.print(dayStr(weekday()));
-  Serial.print(" ");
-  Serial.print(monthStr(month()));
-  Serial.print(" ");
-  Serial.println(day(),DEC);
 }
 
 const byte SecHi[30] = {
@@ -262,12 +292,6 @@ byte HrDisp,MinDisp, SecDisp;
 
 #define EELength 7
 byte EEvalues[EELength];
-
-// Variables to store brightness of the three LED rings.
-byte HourBright;
-byte MinBright;
-byte SecBright;
-byte MainBright;
 
 unsigned long LastTime;
 unsigned long TimeNow;
@@ -496,6 +520,27 @@ void RTCsetTime(byte hourIn, byte minuteIn, byte secondIn)
 
   Wire.write(sh);  // Send hours as BCD
 
+  Wire.write(0);  //
+
+  byte td = day() /10;
+  byte od = day() - td*10;
+  byte sd = (td << 4 ) | od;
+
+  Wire.write(sd);  // Send day as BCD
+
+  byte tM = month() /10;
+  byte oM = month() - tM*10;
+  byte sM = (tM << 4 ) | oM;
+
+  Wire.write(sM);  // Send month as BCD
+
+  byte ty = (year()-2000) /10;
+  byte oy = (year()-2000) - ty*10;
+  byte sy = (ty << 4 ) | oy;
+
+  Wire.write(sy);  // Send year as BCD
+
+
   Wire.endTransmission();
 
 }
@@ -508,9 +553,9 @@ byte RTCgetTime()
   Wire.beginTransmission(104);  // 104 is DS3231 device address
   Wire.write((byte)0);  // start at register 0
   Wire.endTransmission();
-  Wire.requestFrom(104, 3);  // request three bytes (seconds, minutes, hours)
+  Wire.requestFrom(104, 7);  // request three bytes (seconds, minutes, hours)
 
-  int seconds, minutes, hours;
+  int seconds, minutes, hours, day, month;
   unsigned int temptime1, temptime2;
   byte updatetime = 0;
 
@@ -520,6 +565,10 @@ byte RTCgetTime()
     seconds = Wire.read();  // get seconds
     minutes = Wire.read();  // get minutes
     hours = Wire.read();    // get hours
+    Wire.read();    // skip
+    day = Wire.read();    // get day
+    month = Wire.read();    // get month
+    year_ = Wire.read();    // get year
   }
 
   // IF time is off by MORE than two seconds, then correct the displayed time.
@@ -534,7 +583,9 @@ byte RTCgetTime()
     seconds = (((seconds & 0b11110000)>>4)*10 + (seconds & 0b00001111));  // convert BCD to decimal
     minutes = (((minutes & 0b11110000)>>4)*10 + (minutes & 0b00001111));  // convert BCD to decimal
     hours = (((hours & 0b00110000)>>4)*10 + (hours & 0b00001111));  // convert BCD to decimal (assume 24 hour mode)
-
+    day = (((day & 0b00110000)>>4)*10 + (day & 0b00001111));  // convert BCD to decimal
+    month = (((month & 0b00110000)>>4)*10 + (month & 0b00001111));  // convert BCD to decimal
+    year_ = (((year_ & 0b11110000)>>4)*10 + (year_ & 0b00001111));  // convert BCD to decimal
     // Optional: report time::
     // Serial.print(hours); Serial.print(":"); Serial.print(minutes); Serial.print(":"); Serial.println(seconds);
 
@@ -562,6 +613,7 @@ byte RTCgetTime()
       SecNow = seconds;
       MinNow = minutes;
       HrNow = hours;
+      setTime(hours, minutes, seconds, day, month, year_ + 2000);
 
       if ( HrNow > 11)  // Convert 24-hour mode to 12-hour mode
         HrNow -= 12;
@@ -574,7 +626,7 @@ byte RTCgetTime()
 
 void setup()  // run once, when the sketch starts
 {
-  Serial.begin(19200);
+  Serial.begin(9600);
   setTime(0);
 
   PORTB = 0;
@@ -648,6 +700,9 @@ void setup()  // run once, when the sketch starts
 
   if (ExtRTC)  // If time is already set from the RTC...
     VCRmode = 0;
+
+
+  Serial.println("Ready!");
 
 }  // End Setup
 
@@ -1416,11 +1471,14 @@ void loop()
     // Print confirmation
     Serial.println("Clock synced at: ");
     Serial.println(now(),DEC);
+    Serial.println(year(),DEC);
 
     if(timeStatus() == timeSet) {  // update clocks if time has been synced
 
       if ( prevtime != now() )
       {
+        timeStatus();  // refresh the Date and time properties
+        digitalClockDisplay( );  // update digital clock
         if (ExtRTC)
           RTCsetTime(HrNow,MinNow,SecNow);
 
