@@ -5,7 +5,7 @@ ARCHITECTURE  = avr
 BOARD_TAG     = pro
 BOARD_SUB     = 16MHzatmega328
 
-ifneq ($(MAKECMDGOALS), printsize)
+ifeq (, $(filter $(MAKECMDGOALS),printsize monitor test))
 # run include with non silent setup
 # https://github.com/sudar/Arduino-Makefile
 -include /usr/share/arduino/Arduino.mk
