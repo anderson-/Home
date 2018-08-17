@@ -10,3 +10,12 @@
 [submodule "devices/bedroom/clock/bulbdial/libraries/Time"]
 	path = devices/bedroom/clock/bulbdial/libraries/Time
 	url = https://github.com/PaulStoffregen/Time
+[submodule "devices/bedroom/clock/lights/libraries/SmoothThermistor"]
+	path = devices/bedroom/clock/lights/libraries/SmoothThermistor
+	url = https://github.com/giannivh/SmoothThermistor
+[submodule "devices/bedroom/clock/lights/libraries/IRLremote"]
+	path = devices/bedroom/clock/lights/libraries/IRLremote
+	url = https://github.com/NicoHood/IRLremote
+[submodule "devices/bedroom/clock/lights/libraries/SerialCommands"]
+	path = devices/bedroom/clock/lights/libraries/SerialCommands
+	url = https://github.com/ppedro74/Arduino-SerialCommands
