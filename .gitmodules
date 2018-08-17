@@ -1,0 +1,9 @@
+[submodule "devices/kitchen/arduino/libraries/SerialCommands"]
+	path = devices/kitchen/arduino/libraries/SerialCommands
+	url = https://github.com/ppedro74/Arduino-SerialCommands
+[submodule "devices/kitchen/arduino/libraries/SimpleDHT"]
+	path = devices/kitchen/arduino/libraries/SimpleDHT
+	url = https://github.com/winlinvip/SimpleDHT
+[submodule "devices/kitchen/arduino/libraries/SmoothThermistor"]
+	path = devices/kitchen/arduino/libraries/SmoothThermistor
+	url = https://github.com/giannivh/SmoothThermistor
