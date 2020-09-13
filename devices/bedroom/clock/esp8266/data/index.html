@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <meta http-equiv='refresh' content='5'/>
+    <title>ESP8266 Demo</title>
+    <style>
+      body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }
+    </style>
+  </head>
+  <body>
+    <h1>KITCHEN CONTROL 2.1 ESP8266</h1>
+    <form action="/serial" method="POST">
+      <select name="serial">
+       <option value="asd">Volvo</option>
+       <option value="qwe">as</option>
+      </select>
+      </br>
+      <input type="submit" value="Ok">
+    </form>
+    <form action="/serial" method="POST">
+      <button type="submit" name="serial" value="digitalWrite 16 1">LED on</button>
+    </form>
+    <form action="/serial" method="POST">
+      <button type="submit" name="serial" value="digitalWrite 16 0">LED off</button>
+    </form>
+    <form action="/serial" method="POST">
+      <button type="submit" name="serial" value="digitalWrite 17 1">RELAY on</button>
+    </form>
+    <form action="/serial" method="POST">
+      <button type="submit" name="serial" value="digitalWrite 17 0">RELAY off</button>
+    </form>
+    <img src="/test.svg" />
+  </body>
+</html>
